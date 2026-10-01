@@ -1,0 +1,84 @@
+# csrn — Assurance
+
+A thin Rust facade connecting [Charter](https://github.com/corbet-foss/cchr) to
+cvld's public trust feed. The follower lives in
+[cnvy — Envoy](https://github.com/corbet-foss/cnvy); it owns retries, cancellation
+and scheduling. The `feed` and `http` modules re-export that leaf. Assurance owns no
+second policy evaluator, trust revision, member registry or database.
+
+The caller supplies Unix time and executes returned `Request` values. Only
+`/v1/trust_feed` and `/v1/trust_changes` can be requested. Feed responses go to
+Charter with authenticated origin evidence. Announcements cause a fetch; they
+never become trust material. Timed refresh recovers lost announcements.
+
+```rust
+# fn example(now: u64) -> csrn::Result<()> {
+use csrn::{Assurance, feed::Config};
+let config = Config {
+    refresh_seconds: 60, poll_seconds: 2, request_seconds: 30,
+    initial_backoff_seconds: 2, maximum_backoff_seconds: 60,
+    maximum_staleness_seconds: 120,
+};
+let mut assurance = Assurance::new("https://alpha.example.test", "alpha", config)?;
+let request = assurance.start(now)?;
+assert_eq!(request.path(), "/v1/trust_feed");
+// Execute through the configured transport, then call on_feed with authenticated
+// origin evidence and receive time. Poll next(now); stop() fences late replies.
+# Ok(()) }
+```
+
+Optional `http` provides a native HTTPS adapter with bounded response collection,
+redirect refusal, no cookies/bearers/proxy inheritance and a generic User-Agent.
+Its `Received::authority` stamps successful origin-authenticated responses with
+the caller's receive time. Browser runtimes supply their own network adapter;
+the same synchronous state machine and vectors run on wasm.
+
+Read [docs/CONTRACT.md](docs/CONTRACT.md) for states, ports, deadlines and limits.
+FSL-1.1-ALv2. Nothing is published to a registry.
+
+## Scope
+
+Wire Charter and Envoy, forwarding operations and deriving readiness from those
+children. Own no retry, network, signature or admission logic.
+
+## Reuse and candidates
+
+Reuse cchr/csgn/cshm for trust verification and schema semantics. Envoy owns the extracted feed
+state machine and native HTTPS adapter. cvld's actual public
+POST actions are the protocol. Importing its server package into the runtime
+would couple a device consumer to issuer secrets/storage and the server graph.
+
+[reqwest](https://docs.rs/reqwest/latest/reqwest/) and its
+[redirect policy](https://docs.rs/reqwest/latest/reqwest/redirect/struct.Policy.html)
+provide native HTTP/TLS; `Policy::none` enforces refusal. serde supplies bounded
+announcement decoding and url validates origins. Generic retry crates such as
+backoff can schedule retries, but do not own the required response-generation,
+announcement and Charter freshness state; a small explicit machine keeps these
+transitions deterministic and testable without a runtime or hidden wall clock.
+
+`VerifiedCharter::admission_policy(action, now, maximum_snapshot_age)` borrows the
+original signed full policy and separate revocations for Guard. Guard delegates
+policy to Rulebook and requires a valid credential, device signature and profile.
+A fresh publication alone is not positive admission; current door device
+registration remains an integration requirement.
+
+## Real door evidence
+
+Native and wasm tests replay unchanged public feed and announcement bytes from
+[Charter’s running cvld door tests](https://github.com/corbet-foss/cchr/actions/runs/36879511545).
+They cover all/any/threshold policy edits, schema changes and last-passkey
+revocation; ordinary registration, issuance and renewal leave the feed unchanged.
+[Fixture provenance](tests/fixtures/README.md) records exact producer revisions
+and SHA-256 digests. Three additional native tests run a real local TLS server.
+
+## Dependency maintenance and coverage
+
+First-party dependencies follow `main`; Cargo.lock records one exact revision
+per crate. CI checks the entire resolved graph, including optional declarations.
+Dependabot covers Cargo and GitHub Actions (there is no npm manifest here).
+The merge workflow uses GitHub metadata only and requires every substantive CI
+job and all published checks to succeed on the exact Dependabot head. It never
+executes PR code with write permissions or bypasses branch protection.
+
+[cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov) supplies LLVM line and
+branch measurements; the strict gate and exclusions are in [COVERAGE.md](docs/COVERAGE.md).
