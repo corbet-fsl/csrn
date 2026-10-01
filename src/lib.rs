@@ -6,6 +6,13 @@ pub use cnvy::feed;
 pub use cnvy::http;
 pub use cnvy::{Error, Result};
 use feed::{Config, Follower, Request};
+/// Derived readiness, with no separately retained trust state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Readiness {
+    Unready,
+    Current,
+    Unavailable,
+}
 pub struct Assurance {
     charter: cchr::Charter,
     follower: Follower,
@@ -28,6 +35,14 @@ impl Assurance {
         self.follower
             .permits_current(value.revision(), value.policy_epoch(), now)?;
         Ok(value)
+    }
+    /// Derive readiness at injected Unix seconds from both child owners.
+    pub fn readiness(&mut self, now: u64) -> Readiness {
+        match self.current(now) {
+            Ok(_) => Readiness::Current,
+            Err(Error::Trust(cchr::Error::Unavailable)) => Readiness::Unready,
+            Err(_) => Readiness::Unavailable,
+        }
     }
     pub fn next(&mut self, now: u64) -> Result<Option<Request>> {
         let revision = self.charter.current(now).map(|v| v.revision()).unwrap_or(0);

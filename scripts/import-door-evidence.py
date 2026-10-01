@@ -3,14 +3,20 @@
 import hashlib
 import json
 import pathlib
+import re
 import shutil
 import sys
 
 source = pathlib.Path(sys.argv[1])
 run = sys.argv[2]
 revision = sys.argv[3]
+door_revision = (source.parent / "door-revision.txt").read_text().strip()
+if not all(re.fullmatch(r"[0-9a-f]{40}", value) for value in [revision, door_revision]):
+    raise ValueError("Expected full producer and door commit revisions")
 names = ["initial", "ordinary", "all", "any", "threshold", "schema", "revoked"]
 names += [name + "-announcement" for name in names[2:]]
+names += [name + "-bundle" for name in ["all", "any", "threshold", "schema"]]
+names += ["publishing-root"]
 target = pathlib.Path(__file__).resolve().parents[1] / "tests" / "fixtures"
 target.mkdir(parents=True, exist_ok=True)
 hashes = {}
@@ -25,6 +31,6 @@ assert (target / "initial.json").read_bytes() == (target / "ordinary.json").read
     "producer_repository": "https://github.com/corbet-foss/cchr",
     "producer_revision": revision,
     "ci_url": "https://github.com/corbet-foss/cchr/actions/runs/" + run,
-    "door_revision": "83c163e4239923fa45e38e3712561c42c90f16d8",
+    "door_revision": door_revision,
     "sha256": hashes,
 }, indent=2) + "\n")

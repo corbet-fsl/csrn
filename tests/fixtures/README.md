@@ -1,7 +1,7 @@
 # Actual cvld public trust publications
 
 These unchanged JSON responses were captured by the running global/community
-cvld door in [cchr CI](https://github.com/corbet-foss/cchr/actions/runs/36879511545).
+cvld door in [cchr CI](https://github.com/corbet-foss/cchr/actions/runs/36911320705).
 The services use a temporary libSQL store and synthetic users, real software
 WebAuthn credentials, and real BBS proofs. No external account is involved.
 
@@ -20,3 +20,9 @@ csrn tests replay this evidence; they do not start cvld themselves. The cchr CI
 producer runs real HTTP door services afresh. The separate csrn HTTP tests use
 real local TLS to exercise origin authentication, refusal and response bounds.
 These are public trust publications only, with synthetic fixture material.
+
+The current captures also include actual authorized-device-signed bundles for
+all, any, threshold and schema changes. `publishing-root.json` comes independently
+from synthetic deployment configuration before the producer fetches a feed.
+It is not derived from the returned `key_ring`. Only the public verification
+ring is captured; the synthetic private seed is not part of this artifact.

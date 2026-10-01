@@ -162,3 +162,13 @@ fn member_epoch_hint_forces_refresh_without_becoming_authority() {
         .unwrap();
     assert_eq!(a.current(NOW + 4).unwrap().policy_epoch(), 2);
 }
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+fn facade_readiness_is_derived_from_both_owner_states() {
+    let mut unready = Assurance::new(ORIGIN, "alpha", config()).unwrap();
+    assert_eq!(unready.readiness(NOW), csrn::Readiness::Unready);
+    let (mut current, _) = ready();
+    assert_eq!(current.readiness(NOW), csrn::Readiness::Current);
+    assert_eq!(current.readiness(NOW + 61), csrn::Readiness::Unavailable);
+}
