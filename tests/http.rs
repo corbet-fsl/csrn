@@ -18,6 +18,7 @@ fn config() -> Config {
         request_seconds: 26,
         initial_backoff_seconds: 2,
         maximum_backoff_seconds: 16,
+        retry_entropy: 0,
         maximum_staleness_seconds: 60,
     }
 }
@@ -76,7 +77,7 @@ async fn real_https_fetch_bootstraps_without_member_headers_or_redirects() {
     let mut s = signer();
     let content = bytes(&feed(&mut s, 10, 1));
     let mut reply = format!(
-        "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
         content.len()
     )
     .into_bytes();
@@ -104,7 +105,7 @@ async fn real_https_fetch_bootstraps_without_member_headers_or_redirects() {
 #[tokio::test]
 async fn redirect_and_oversize_responses_are_refused() {
     for reply in [b"HTTP/1.1 307 Temporary Redirect\r\nLocation: https://127.0.0.1:9/\r\nContent-Length: 0\r\n\r\n".to_vec(),
-        b"HTTP/1.1 200 OK\r\nContent-Length: 999999999\r\n\r\n".to_vec()] {
+        b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 999999999\r\n\r\n".to_vec()] {
         let (origin,root,server)=server(reply).await;
         let http=Http::with_roots(&origin,"alpha",&[root]).unwrap();
         let mut a=Assurance::new(&origin,"alpha",config()).unwrap();let request=a.start(NOW).unwrap();
@@ -119,7 +120,7 @@ async fn redirect_and_oversize_responses_are_refused() {
 async fn chunked_announcements_enforce_the_bound_without_a_length_header() {
     let body = vec![b' '; 2048];
     let mut reply = format!(
-        "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n{:x}\r\n",
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n{:x}\r\n",
         body.len()
     )
     .into_bytes();
