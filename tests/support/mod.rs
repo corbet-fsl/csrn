@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use csgn::{Kind as CoseKind, SecretKey, Signer};
-use csrn::cchr::AuthenticatedOrigin;
+use csrn::cchr::Configuration;
 use serde_json::{Value, json};
 
 pub const NOW: u64 = 1_800_000_000;
@@ -50,16 +50,14 @@ pub fn feed(s: &mut Signer, revision: u64, epoch: u64) -> Value {
     }
     v
 }
-pub fn authority(s: &Signer) -> AuthenticatedOrigin {
-    AuthenticatedOrigin::from_authenticated_response(
-        ORIGIN,
-        "alpha",
-        &s.key_ring().to_cbor(),
-        1,
-        NOW,
-        NOW + 100,
-    )
-    .unwrap()
+pub fn configuration(origin: &str, community: &str) -> Configuration {
+    Configuration {
+        origin: origin.into(),
+        community: community.into(),
+        key_ring: signer().key_ring().to_cbor(),
+        minimum_revision: 1,
+        ring_revision: 0,
+    }
 }
 pub fn bytes(v: &Value) -> Vec<u8> {
     serde_json::to_vec(v).unwrap()

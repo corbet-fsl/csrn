@@ -18,11 +18,9 @@ fn config() -> Config {
 fn ready() -> (Assurance, csgn::Signer) {
     let mut signer = signer();
     let feed = feed(&mut signer, 10, 1);
-    let authority = authority(&signer);
-    let mut a = Assurance::new(ORIGIN, "alpha", config()).unwrap();
+    let mut a = Assurance::new(configuration(ORIGIN, "alpha"), config()).unwrap();
     let request = a.start(NOW).unwrap();
-    a.on_feed(request.id(), &bytes(&feed), &authority, NOW)
-        .unwrap();
+    a.on_feed(request.id(), &bytes(&feed), NOW).unwrap();
     (a, signer)
 }
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
@@ -46,8 +44,7 @@ fn startup_announcements_and_atomic_install() {
     assert_eq!(request.action(), Action::Fetch);
     assert_eq!(request.body(), serde_json::json!({}));
     let current = feed(&mut s, 11, 2);
-    a.on_feed(request.id(), &bytes(&current), &authority(&s), NOW + 2)
-        .unwrap();
+    a.on_feed(request.id(), &bytes(&current), NOW + 2).unwrap();
     assert_eq!(a.current(NOW + 2).unwrap().revision(), 11);
     assert_eq!(
         a.on_announcement(poll.id(), br#"{}"#, NOW + 2),
@@ -87,7 +84,7 @@ fn cancellations_duplicates_clock_regression_and_restart_are_fenced() {
     assert!(a.current(NOW + 2).is_err());
     let v = feed(&mut s, 9, 1);
     assert_eq!(
-        a.on_feed(fresh.id(), &bytes(&v), &authority(&s), NOW + 2),
+        a.on_feed(fresh.id(), &bytes(&v), NOW + 2),
         Err(Error::Trust(csrn::cchr::Error::Rollback))
     );
     let next = a.next(NOW + 5).unwrap().unwrap();
@@ -97,7 +94,7 @@ fn cancellations_duplicates_clock_regression_and_restart_are_fenced() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 fn timeout_and_retry_storms_have_one_bounded_operation() {
-    let mut a = Assurance::new(ORIGIN, "alpha", config()).unwrap();
+    let mut a = Assurance::new(configuration(ORIGIN, "alpha"), config()).unwrap();
     let initial = a.start(NOW).unwrap();
     assert!(a.next(NOW + 25).unwrap().is_none());
     assert!(a.next(NOW + 26).unwrap().is_none());
@@ -118,7 +115,7 @@ fn timeout_and_retry_storms_have_one_bounded_operation() {
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 fn malformed_announcements_and_corrupt_feed_cannot_become_trust() {
-    let (mut a, s) = ready();
+    let (mut a, _) = ready();
     let poll = a.next(NOW + 2).unwrap().unwrap();
     assert_eq!(
         a.on_announcement(
@@ -130,10 +127,7 @@ fn malformed_announcements_and_corrupt_feed_cannot_become_trust() {
     );
     assert_eq!(a.current(NOW + 2).unwrap().revision(), 10);
     let fetch = a.next(NOW + 4).unwrap().unwrap();
-    assert!(
-        a.on_feed(fetch.id(), b"{}", &authority(&s), NOW + 4)
-            .is_err()
-    );
+    assert!(a.on_feed(fetch.id(), b"{}", NOW + 4).is_err());
     assert_eq!(a.current(NOW + 4).unwrap().revision(), 10);
     a.on_change(11, NOW + 4).unwrap();
     assert!(a.current(NOW + 4).is_err());
@@ -153,21 +147,20 @@ fn member_epoch_hint_forces_refresh_without_becoming_authority() {
     let refresh = a.next(NOW + 2).unwrap().unwrap();
     let old = feed(&mut s, 11, 1);
     assert_eq!(
-        a.on_feed(refresh.id(), &bytes(&old), &authority(&s), NOW + 2),
+        a.on_feed(refresh.id(), &bytes(&old), NOW + 2),
         Err(Error::BehindAnnouncement)
     );
     assert!(a.current(NOW + 2).is_err());
     let fresh = a.next(NOW + 4).unwrap().unwrap();
     let new = feed(&mut s, 12, 2);
-    a.on_feed(fresh.id(), &bytes(&new), &authority(&s), NOW + 4)
-        .unwrap();
+    a.on_feed(fresh.id(), &bytes(&new), NOW + 4).unwrap();
     assert_eq!(a.current(NOW + 4).unwrap().policy_epoch(), 2);
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 fn facade_readiness_is_derived_from_both_owner_states() {
-    let mut unready = Assurance::new(ORIGIN, "alpha", config()).unwrap();
+    let mut unready = Assurance::new(configuration(ORIGIN, "alpha"), config()).unwrap();
     assert_eq!(unready.readiness(NOW), csrn::Readiness::Unready);
     let (mut current, _) = ready();
     assert_eq!(current.readiness(NOW), csrn::Readiness::Current);

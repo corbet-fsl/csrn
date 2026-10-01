@@ -7,8 +7,8 @@ keys, logs, a duplicate trust revision or a policy evaluator.
 
 ## API and ports
 
-`Assurance::new(origin, community, Config)`, `start(now)`, `next(now)`,
-`on_feed(id, bytes, authenticated_origin, now)`, `on_announcement(id, bytes, now)`,
+`Assurance::new(cchr::Configuration, Config)`, `start(now)`, `next(now)`,
+`on_feed(id, bytes, now)`, `on_announcement(id, bytes, now)`,
 `on_change(revision, now)`, `on_policy_epoch(epoch, now)`, `refresh(now)`, `on_error(id, now, jitter)`, `current(now)`, `readiness(now)`, `stop()`.
 Config contains explicit refresh, minimum poll, request, backoff and maximum
 staleness durations, plus injected per-instance `retry_entropy`. All times are injected Unix seconds. No timer, background
@@ -18,8 +18,7 @@ invented for this volatile machine; a server restart starts unbootstrapped.
 The injected network port is an owned `Request` output and a matching completion
 input. `on_change` must come from the configured public feed; a member epoch hint
 must come from already verified credential metadata, never an arbitrary member
-request integer. A false high hint can deny availability until restart, but
-cannot grant authority. Request exposes only operation ID, Fetch or Poll(public revision), exact
+request integer. Envoy bounds epoch hints to the next verified epoch; arbitrary high hints cannot establish a permanent epoch floor. Request exposes only operation ID, Fetch or Poll(public revision), exact
 existing cvld path/body and exclusive deadline. The enclosing runtime must cancel
 transport at that deadline or on stop/change; dropping a native execute future
 cancels its I/O. Follower's operation ID also rejects any late completion. It
@@ -35,13 +34,13 @@ merely against Content-Length: at most cchr's 32 MiB for a feed and 1024 bytes f
 an announcement. All non-success statuses and missing/non-JSON Content-Type values fail. Explicit operator CA roots may
 supplement the public store; certificate and hostname checks stay enabled.
 
-A `Received` has no public constructor. Its `authority(receive_time, fresh_for)`
-converts only a successful HTTPS feed response into cchr's privileged origin
-assertion, with the response's ring/current revision and a 1–300-second receipt
-window. Charter still verifies every signed field and floor. An adapter supplied
-by a browser has the same obligation: authenticate the configured origin, bypass
-body caches, reject redirects and never assert authority from untrusted bytes.
-No TLS deployment or browser networking runtime is shipped.
+`Http::new(&Configuration)` and `with_roots(&Configuration, roots)` share
+Charter's deployment configuration. `Received::bytes()` exposes bounded transport
+bytes only. The initial publishing ring and minimum revisions come from trusted
+per-community deployment configuration, never a response. Original csgn proofs
+signed by the installed predecessor authorize subsequent rings; Charter commits
+ring and policy floors together only after the complete feed verifies. HTTPS and
+browser adapters fetch bytes and cannot grant publishing authority.
 
 ## States and failure semantics
 
@@ -63,7 +62,7 @@ A periodic fetch runs even when announcements are lost. Empty/unchanged polls
 are spaced by the configured minimum interval, preventing immediate-reply loops.
 
 Exponential retry delay starts at the explicit initial value, doubles to the
-configured cap, and uses caller-supplied entropy for bounded positive jitter.
+configured cap, and uses injected per-instance `Config.retry_entropy` for bounded positive jitter on every failure path. `on_error` can replace it with fresh runtime entropy.
 At most one request can exist; caps are enforced for any supplied jitter.
 Successful verified refresh resets backoff. Rejected candidates preserve Charter's
 old valid material; no error extends its signed deadline or the last successful
@@ -105,7 +104,7 @@ for all, any, threshold and schema changes on native and wasm. Payload tampering
 refuses with Binding; the revoked feed invalidates the old epoch with Version.
 Separate Charter/Guard vectors verify member and device Revoked refusals at a
 matching epoch. No signed material is translated or policy reimplemented.
-The full cvld→guard→forum path still requires the door owner's current device
-registration authority and matching signed credential evidence. Production TLS bootstrap provisioning, browser transport and embedding
+The actual door enrollment and signed-bundle path is verified. Production forum
+wiring, deployment publishing-root provisioning, browser transport and embedding
 cancellation/scheduling are adapter integration responsibilities. No deployment,
 registry publication, payments or external test accounts are involved.

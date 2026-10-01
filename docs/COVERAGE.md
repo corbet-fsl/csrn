@@ -23,3 +23,9 @@ when every file explicitly reports an empty branch list and every production
 line remains covered. Any introduced branch must be 100% covered. No production
 file is excluded and no synthetic branch is added to manufacture a denominator.
 Charter, Guard and Envoy retain strict nonempty line/branch gates in their owners.
+
+The source gate now requires complete LCOV, raw JSON and annotated text from the
+same instrumented execution. Every source file, emitted line, branch and hit/miss
+must agree. A single-file annotated report may omit its filename heading only
+when the other two inventories identify exactly one source file. The exclusion
+manifest is empty; source coverage does not claim every generic instantiation.

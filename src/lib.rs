@@ -18,9 +18,9 @@ pub struct Assurance {
     follower: Follower,
 }
 impl Assurance {
-    pub fn new(origin: &str, community: &str, config: Config) -> Result<Self> {
+    pub fn new(configuration: cchr::Configuration, config: Config) -> Result<Self> {
         Ok(Self {
-            charter: cchr::Charter::new(origin, community).map_err(Error::Trust)?,
+            charter: cchr::Charter::new(configuration).map_err(Error::Trust)?,
             follower: Follower::new(config)?,
         })
     }
@@ -63,15 +63,8 @@ impl Assurance {
             .unwrap_or(0);
         self.follower.on_policy_epoch(epoch, current, now)
     }
-    pub fn on_feed(
-        &mut self,
-        id: u64,
-        bytes: &[u8],
-        origin: &cchr::AuthenticatedOrigin,
-        now: u64,
-    ) -> Result<()> {
-        self.follower
-            .feed(id, bytes, origin, &mut self.charter, now)
+    pub fn on_feed(&mut self, id: u64, bytes: &[u8], now: u64) -> Result<()> {
+        self.follower.feed(id, bytes, &mut self.charter, now)
     }
     pub fn on_announcement(&mut self, id: u64, bytes: &[u8], now: u64) -> Result<()> {
         self.follower.announcement(id, bytes, now)
