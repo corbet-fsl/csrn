@@ -318,7 +318,7 @@ dependencies = [
 [[package]]
 name = "crbk"
 version = "0.0.0"
-source = "git+https://github.com/corbet-foss/crbk?branch=main#536e743dddf280d3219799b04ce4745f9e5c1bf2"
+source = "git+https://github.com/corbet-foss/crbk?branch=main#2811a5e1614fbdcd03b493dc8af0e901633d2e5e"
 dependencies = [
  "serde",
  "serde_json",

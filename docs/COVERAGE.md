@@ -2,8 +2,9 @@
 
 CI uses cargo-llvm-cov on nightly for upstream Rust branch instrumentation.
 Stable Rust remains the compiler for formatting, Clippy, native and wasm checks.
-The gate requires exactly 100% covered production lines and branches, from the
-LLVM JSON counts, and refuses absent or empty measurements. There are no
+The gate requires exactly 100% covered emitted production lines and branches,
+reconciled across LCOV, raw LLVM JSON and annotated text from one execution. It
+refuses absent or empty line measurements. There are no
 production-code exclusions. Test harness and fixture files are excluded because
 they are validation inputs rather than shipped behavior. A failed gate is an
 open test gap, never evidence of complete coverage.
@@ -15,10 +16,10 @@ The checked-in lock and per-run artifacts retain exact reproducible resolutions.
 
 ## Branchless facade
 
-After Envoy extraction, Assurance has 56 measured production lines and no
+After Envoy extraction, Assurance has no
 instrumentable branch sites (LLVM reports zero, with branch instrumentation
-explicitly enabled). All 56 lines execute in the real integration tests. Only
-this facade opts into `--branchless-facade`: a zero branch count is accepted only
+explicitly enabled). Every emitted source line executes in the real integration
+tests; exact counts are retained in each run's artifact. A zero branch count is accepted only
 when every file explicitly reports an empty branch list and every production
 line remains covered. Any introduced branch must be 100% covered. No production
 file is excluded and no synthetic branch is added to manufacture a denominator.

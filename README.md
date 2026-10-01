@@ -59,17 +59,19 @@ transitions deterministic and testable without a runtime or hidden wall clock.
 `VerifiedCharter::admission_policy(action, now, maximum_snapshot_age)` borrows the
 original signed full policy and separate revocations for Guard. Guard delegates
 policy to Rulebook and requires a valid credential, device signature and profile.
-A fresh publication alone is not positive admission; current door device
-registration remains an integration requirement.
+A fresh publication alone is not positive admission. Native and wasm tests also
+verify the actual door's authorized-device bundles through Assurance and Guard;
+production forum wiring remains downstream.
 
 ## Real door evidence
 
 Native and wasm tests replay unchanged public feed and announcement bytes from
-[Charter’s running cvld door tests](https://github.com/corbet-foss/cchr/actions/runs/36879511545).
+[Charter’s running cvld door tests](https://github.com/corbet-foss/cchr/blob/main/.github/workflows/ci.yml).
 They cover all/any/threshold policy edits, schema changes and last-passkey
 revocation; ordinary registration, issuance and renewal leave the feed unchanged.
 [Fixture provenance](tests/fixtures/README.md) records exact producer revisions
-and SHA-256 digests. Three additional native tests run a real local TLS server.
+and SHA-256 digests. Native tests run a real local TLS server, including refusal
+of a valid-TLS response whose publishing ring lacks configured authority.
 
 ## Dependency maintenance and coverage
 
