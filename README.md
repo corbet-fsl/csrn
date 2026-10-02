@@ -38,8 +38,32 @@ FSL-1.1-ALv2. Nothing is published to a registry.
 
 ## Scope
 
-Wire Charter and Envoy, forwarding operations and deriving readiness from those
-children. Own no retry, network, signature or admission logic.
+### Purpose
+
+The forum's link to cvld, wiring Charter and Envoy so the forum holds current, verified community material.
+
+### Owns
+
+- Wires cchr and cnvy and derives one readiness from both.
+- Hands Gather immutable, scoped verified material together with the cvld-owned csgn and cgrd verification capabilities.
+- Accepts the signed settings resulting from admin actions; this is the only path by which policy reaches cfrm.
+
+### Never
+
+- No second signature or policy checker, no loading of private keys, no per-member admission queries, and no copying of snapshots into a persistent member database.
+- Holds no trust revision of its own and no member registry.
+- A fresh publication alone is never positive admission.
+- No trust scores or confidence levels; gates are on or off.
+
+### States
+
+Derived readiness only: Unready, Current, or Unavailable, from Charter freshness and Envoy state. A newer revision, a newer verified policy epoch, expiry, clock regression, or exceeded maximum staleness makes it Unavailable.
+
+### Test obligations
+
+- Real feed-to-Charter-to-guard integration: an invalid, missing, or stale publication refuses entry and change.
+- Feed failures and epoch updates propagate to Gather without facade-built verdicts.
+- A member-presented newer policy epoch closes readiness until an authenticated feed catches up; a false high hint may deny availability but never grants authority.
 
 ## Reuse and candidates
 
