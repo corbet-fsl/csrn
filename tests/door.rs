@@ -206,17 +206,30 @@ fn member_epoch_hint_closes_readiness_until_a_real_feed_restores_admission() {
         a.on_announcement(poll.id(), UPDATES[1].0, now),
         Err(Error::Obsolete)
     );
-    // A correctly signed capture behind the hint cannot restore readiness.
+    // A correctly signed but unchanged epoch5 capture sits behind the hint
+    // and cannot restore readiness.
     let fetch = a.next(now).unwrap().unwrap();
     assert_eq!(fetch.action(), Action::Fetch);
     assert_eq!(
-        a.on_feed(fetch.id(), INITIAL, now),
-        Err(Error::Trust(TrustError::Rollback))
+        a.on_feed(fetch.id(), UPDATES[0].1, now),
+        Err(Error::BehindAnnouncement)
     );
     assert_eq!(a.current(now).unwrap_err(), Error::Unavailable);
     assert_eq!(a.readiness(now), Readiness::Unavailable);
-    // The genuinely newer captured feed and bundle restore real admission.
+    // A repeated unchanged epoch5 feed still refuses after bounded backoff.
     now += 2;
+    let fetch = a.next(now).unwrap().unwrap();
+    assert_eq!(fetch.action(), Action::Fetch);
+    assert_eq!(
+        a.on_feed(fetch.id(), UPDATES[0].1, now),
+        Err(Error::BehindAnnouncement)
+    );
+    assert_eq!(a.current(now).unwrap_err(), Error::Unavailable);
+    assert_eq!(a.readiness(now), Readiness::Unavailable);
+    // Backoff doubles after the second refusal, so no fetch is due yet.
+    assert!(a.next(now + 3).unwrap().is_none());
+    // The genuinely newer captured feed and bundle restore real admission.
+    now += 4;
     let fetch = a.next(now).unwrap().unwrap();
     assert_eq!(fetch.action(), Action::Fetch);
     a.on_feed(fetch.id(), UPDATES[1].1, now).unwrap();
@@ -224,9 +237,9 @@ fn member_epoch_hint_closes_readiness_until_a_real_feed_restores_admission() {
         serde_json::from_slice(include_bytes!("fixtures/any-bundle.json")).unwrap();
     let bundle: cgrd::Bundle = serde_json::from_value(capture["bundle"].clone()).unwrap();
     let action = capture["action"].as_str().unwrap();
+    assert_eq!(a.readiness(now), Readiness::Current);
     let current = a.current(now).unwrap();
     assert_eq!((current.revision(), current.policy_epoch()), (18, 6));
-    assert_eq!(a.readiness(now), Readiness::Current);
     let policy = current.admission_policy(action, now, 86_400).unwrap();
     assert!(
         cgrd::check_published(
@@ -277,17 +290,33 @@ fn false_high_epoch_hint_denies_availability_without_granting_authority() {
         a.on_announcement(poll.id(), UPDATES[1].0, now),
         Err(Error::Obsolete)
     );
-    // A correctly signed but insufficient capture leaves readiness unavailable.
+    // A correctly signed but unchanged epoch5 capture sits behind the hint
+    // and cannot restore readiness.
     let fetch = a.next(now).unwrap().unwrap();
     assert_eq!(fetch.action(), Action::Fetch);
     assert_eq!(
-        a.on_feed(fetch.id(), INITIAL, now),
-        Err(Error::Trust(TrustError::Rollback))
+        a.on_feed(fetch.id(), UPDATES[0].1, now),
+        Err(Error::BehindAnnouncement)
     );
     assert_eq!(a.current(now).unwrap_err(), Error::Unavailable);
     assert_eq!(a.readiness(now), Readiness::Unavailable);
-    // The hint never becomes authority: only the genuine next feed restores admission.
+    // A repeated unchanged epoch5 feed still refuses after bounded backoff,
+    // so the hint never turns into authority on retry.
     now += 2;
+    let fetch = a.next(now).unwrap().unwrap();
+    assert_eq!(fetch.action(), Action::Fetch);
+    assert_eq!(
+        a.on_feed(fetch.id(), UPDATES[0].1, now),
+        Err(Error::BehindAnnouncement)
+    );
+    assert_eq!(a.current(now).unwrap_err(), Error::Unavailable);
+    assert_eq!(a.readiness(now), Readiness::Unavailable);
+    // Backoff doubles after the second refusal, so no fetch is due yet.
+    assert!(a.next(now + 3).unwrap().is_none());
+    // Envoy bounds epoch hints to the next verified epoch, so the genuine
+    // epoch6 feed satisfies even this false-high hint; the hint itself never
+    // grants authority.
+    now += 4;
     let fetch = a.next(now).unwrap().unwrap();
     assert_eq!(fetch.action(), Action::Fetch);
     a.on_feed(fetch.id(), UPDATES[1].1, now).unwrap();
@@ -295,9 +324,9 @@ fn false_high_epoch_hint_denies_availability_without_granting_authority() {
         serde_json::from_slice(include_bytes!("fixtures/any-bundle.json")).unwrap();
     let bundle: cgrd::Bundle = serde_json::from_value(capture["bundle"].clone()).unwrap();
     let action = capture["action"].as_str().unwrap();
+    assert_eq!(a.readiness(now), Readiness::Current);
     let current = a.current(now).unwrap();
     assert_eq!((current.revision(), current.policy_epoch()), (18, 6));
-    assert_eq!(a.readiness(now), Readiness::Current);
     let policy = current.admission_policy(action, now, 86_400).unwrap();
     assert!(
         cgrd::check_published(
