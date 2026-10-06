@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.88"
 description = "Assurance: Charter and a bounded community trust-feed follower"
 license = "FSL-1.1-ALv2"
-repository = "https://github.com/corbet-libs/csrn"
+repository = "https://git.corbet.ch/corbet-libs/csrn.git"
 publish = false
 
 [features]
@@ -13,14 +13,14 @@ default = []
 http = ["cnvy/http"]
 
 [dependencies]
-cnvy = { git = "https://github.com/corbet-foss/cnvy", branch = "main" }
-cchr = { git = "https://github.com/corbet-foss/cchr", branch = "main" }
+cnvy = { git = "https://git.corbet.ch/corbet-foss/cnvy.git", branch = "v01" }
+cchr = { git = "https://git.corbet.ch/corbet-foss/cchr.git", branch = "v01" }
 
 
 [dev-dependencies]
-cgrd = { git = "https://github.com/corbet-foss/cgrd", branch = "main", default-features = false }
+cgrd = { git = "https://git.corbet.ch/corbet-foss/cgrd.git", branch = "v01", default-features = false }
 serde_json = "1"
-csgn = { git = "https://github.com/corbet-foss/csgn", branch = "main", default-features = false, features = ["volatile-signer"] }
+csgn = { git = "https://git.corbet.ch/corbet-foss/csgn.git", branch = "v01", default-features = false, features = ["volatile-signer"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
