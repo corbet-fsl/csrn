@@ -26,3 +26,19 @@ all, any, threshold and schema changes. `publishing-root.json` comes independent
 from synthetic deployment configuration before the producer fetches a feed.
 It is not derived from the returned `key_ring`. Only the public verification
 ring is captured; the synthetic private seed is not part of this artifact.
+
+Those unchanged historical credentials predate the mandatory signed
+`cplc.community-credential.v2` purpose and `issuance_action`. Current Guard
+therefore consumes them only as explicit legacy-format refusals, including when
+their original credential signature remains valid. The captures and provenance
+are retained exactly; no missing claim is added or re-signed under their root.
+
+A separate real-signature owner fixture in `tests/door.rs` uses an independently
+configured synthetic csgn issuer and Ed25519 device. It first authenticates the
+original public policy/schema/revocation contents through their original
+Charter, then signs those same public terms under its own fixture root. It
+tests the current follower/Charter/Guard composition, whole-bundle tampering,
+trusted configured action and epoch invalidation without inventing Global gate
+claims or changing the policy. This is consumer crypto/owner evidence, not an
+updated full cvld/cplc issuance capture. Fresh complete issuer captures and
+runtime qualification remain required; these new source vectors have not run.
