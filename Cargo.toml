@@ -13,8 +13,8 @@ default = []
 http = ["cnvy/http"]
 
 [dependencies]
-cnvy = { git = "https://git.corbet.ch/corbet-foss/cnvy.git", branch = "v01" }
-cchr = { git = "https://git.corbet.ch/corbet-foss/cchr.git", branch = "v01" }
+cnvy = { git = "https://git.corbet.ch/corbet-foss/cnvy.git", branch = "main" }
+cchr = { git = "https://git.corbet.ch/corbet-foss/cchr.git", branch = "main" }
 
 
 [dev-dependencies]
