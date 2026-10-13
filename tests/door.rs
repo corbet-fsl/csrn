@@ -393,3 +393,15 @@ fn current_signed_owner_bundles_preserve_follower_guard_binding_and_epoch_checks
     );
     assert_eq!(assurance.current(now + 61).unwrap_err(), Error::Unavailable);
 }
+
+#[test]
+fn a_fingerprint_anchored_assurance_starts_unready_and_validates_its_scope() {
+    use csrn::Readiness;
+    let mut assurance =
+        Assurance::from_fingerprint(ORIGIN.into(), "alpha".into(), [7; 32], 1, config()).unwrap();
+    assert_eq!(assurance.readiness(NOW), Readiness::Unready);
+    assert!(
+        Assurance::from_fingerprint("http://x".into(), "alpha".into(), [7; 32], 1, config())
+            .is_err()
+    );
+}

@@ -24,6 +24,26 @@ impl Assurance {
             follower: Follower::new(config)?,
         })
     }
+    /// A community whose only configured trust is the fingerprint of its genesis
+    /// document; keys are learned through the signed chain (see `cchr::Charter`).
+    pub fn from_fingerprint(
+        origin: String,
+        community: String,
+        fingerprint: [u8; 32],
+        minimum_revision: u64,
+        config: Config,
+    ) -> Result<Self> {
+        Ok(Self {
+            charter: cchr::Charter::from_fingerprint(
+                origin,
+                community,
+                fingerprint,
+                minimum_revision,
+            )
+            .map_err(Error::Trust)?,
+            follower: Follower::new(config)?,
+        })
+    }
     pub fn start(&mut self, now: u64) -> Result<Request> {
         self.follower.start(now)
     }
