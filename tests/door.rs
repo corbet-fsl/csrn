@@ -284,6 +284,9 @@ fn signed_owner_bundle(
         }}))
         .unwrap(),
         openings: vec![],
+        vouched_by: None,
+        vouched_verified: false,
+        vouched_snapshot: None,
     };
     let payload = serde_json::to_vec(&body).unwrap();
     let signature = device
