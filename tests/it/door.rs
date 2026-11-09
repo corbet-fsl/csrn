@@ -1,4 +1,3 @@
-mod support;
 use csrn::{
     Assurance, Error,
     cchr::{Configuration, Error as TrustError, Kind},
@@ -9,33 +8,33 @@ use serde_json::Value;
 const ISSUANCE_ACTION: &str = "community.admit";
 const NOW: u64 = 1_800_000_003;
 const ORIGIN: &str = "https://alpha.example.test";
-const INITIAL: &[u8] = include_bytes!("fixtures/initial.json");
-const ORDINARY: &[u8] = include_bytes!("fixtures/ordinary.json");
+const INITIAL: &[u8] = include_bytes!("../fixtures/initial.json");
+const ORDINARY: &[u8] = include_bytes!("../fixtures/ordinary.json");
 const UPDATES: [(&[u8], &[u8]); 5] = [
     (
-        include_bytes!("fixtures/all-announcement.json"),
-        include_bytes!("fixtures/all.json"),
+        include_bytes!("../fixtures/all-announcement.json"),
+        include_bytes!("../fixtures/all.json"),
     ),
     (
-        include_bytes!("fixtures/any-announcement.json"),
-        include_bytes!("fixtures/any.json"),
+        include_bytes!("../fixtures/any-announcement.json"),
+        include_bytes!("../fixtures/any.json"),
     ),
     (
-        include_bytes!("fixtures/threshold-announcement.json"),
-        include_bytes!("fixtures/threshold.json"),
+        include_bytes!("../fixtures/threshold-announcement.json"),
+        include_bytes!("../fixtures/threshold.json"),
     ),
     (
-        include_bytes!("fixtures/schema-announcement.json"),
-        include_bytes!("fixtures/schema.json"),
+        include_bytes!("../fixtures/schema-announcement.json"),
+        include_bytes!("../fixtures/schema.json"),
     ),
     (
-        include_bytes!("fixtures/revoked-announcement.json"),
-        include_bytes!("fixtures/revoked.json"),
+        include_bytes!("../fixtures/revoked-announcement.json"),
+        include_bytes!("../fixtures/revoked.json"),
     ),
 ];
 fn configuration() -> Configuration {
     let root: Value =
-        serde_json::from_slice(include_bytes!("fixtures/publishing-root.json")).unwrap();
+        serde_json::from_slice(include_bytes!("../fixtures/publishing-root.json")).unwrap();
     Configuration {
         origin: ORIGIN.into(),
         community: "alpha".into(),
@@ -109,10 +108,10 @@ fn real_door_policy_schema_and_revocation_announcements_drive_the_follower() {
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 fn original_door_legacy_bundles_never_become_action_bound_authority() {
     let bundles: &[&[u8]] = &[
-        include_bytes!("fixtures/all-bundle.json"),
-        include_bytes!("fixtures/any-bundle.json"),
-        include_bytes!("fixtures/threshold-bundle.json"),
-        include_bytes!("fixtures/schema-bundle.json"),
+        include_bytes!("../fixtures/all-bundle.json"),
+        include_bytes!("../fixtures/any-bundle.json"),
+        include_bytes!("../fixtures/threshold-bundle.json"),
+        include_bytes!("../fixtures/schema-bundle.json"),
     ];
     let mut assurance = Assurance::new(configuration(), config()).unwrap();
     let fetch = assurance.start(NOW).unwrap();
@@ -208,7 +207,7 @@ fn signed_owner_feed(issuer: &mut csgn::Signer, original: &csrn::cchr::VerifiedC
     let manifest = json!({"purpose":"cplc.trust.v1","community":"alpha","revision":revision,
         "policy_epoch":epoch,"key_ring":issuer.key_ring().to_cbor(),
         "schema_version":original.schema().version});
-    feed["manifest"] = json!(support::sign(
+    feed["manifest"] = json!(crate::support::sign(
         issuer,
         csgn::Kind::SettingsSnapshot,
         manifest
@@ -235,7 +234,7 @@ fn signed_owner_feed(issuer: &mut csgn::Signer, original: &csrn::cchr::VerifiedC
             Kind::Revocations,
         ),
     ] {
-        feed[name] = json!(support::sign(
+        feed[name] = json!(crate::support::sign(
             issuer,
             kind,
             json!({"community":"alpha","revision":revision,"policy_epoch":epoch,
@@ -253,7 +252,7 @@ fn signed_owner_bundle(
     issuance_action: &str,
 ) -> cgrd::Bundle {
     use serde_json::json;
-    let credential = support::sign(
+    let credential = crate::support::sign(
         issuer,
         csgn::Kind::Credential,
         json!(cgrd::Credential {
@@ -267,7 +266,7 @@ fn signed_owner_bundle(
             gates: vec![cgrd::Gate {
                 gate: "cvch".into(),
                 provider: "sponsor".into(),
-                valid_until: support::NOW + 500,
+                valid_until: crate::support::NOW + 500,
             }],
             pins: vec![],
             devices: vec![device.verifying_key().to_bytes()],
@@ -304,13 +303,14 @@ fn current_signed_owner_bundles_preserve_follower_guard_binding_and_epoch_checks
     // required. The signer/device are unrelated to the frozen deployment root.
     let mut original = csrn::cchr::Charter::new(configuration()).unwrap();
     original.install(INITIAL, NOW).unwrap();
-    let mut issuer = support::signer();
+    let mut issuer = crate::support::signer();
     let device = SigningKey::from_bytes(&[81; 32]);
-    let mut assurance = Assurance::new(support::configuration(ORIGIN, "alpha"), config()).unwrap();
+    let mut assurance =
+        Assurance::new(crate::support::configuration(ORIGIN, "alpha"), config()).unwrap();
     let request = assurance.start(NOW).unwrap();
     let feed = signed_owner_feed(&mut issuer, original.current(NOW).unwrap());
     assurance
-        .on_feed(request.id(), &support::bytes(&feed), NOW)
+        .on_feed(request.id(), &crate::support::bytes(&feed), NOW)
         .unwrap();
     let mut now = NOW;
     let mut last = None;
@@ -328,7 +328,7 @@ fn current_signed_owner_bundles_preserve_follower_guard_binding_and_epoch_checks
         assurance
             .on_announcement(
                 poll.id(),
-                &support::bytes(&serde_json::json!({"revision":revision,
+                &crate::support::bytes(&serde_json::json!({"revision":revision,
                     "policy_epoch":epoch,"changed":true})),
                 now,
             )
@@ -338,7 +338,7 @@ fn current_signed_owner_bundles_preserve_follower_guard_binding_and_epoch_checks
         assert_eq!(fetch.action(), Action::Fetch);
         let signed_feed = signed_owner_feed(&mut issuer, source);
         assurance
-            .on_feed(fetch.id(), &support::bytes(&signed_feed), now)
+            .on_feed(fetch.id(), &crate::support::bytes(&signed_feed), now)
             .unwrap();
         let bundle =
             signed_owner_bundle(&mut issuer, &device, epoch, schema_version, ISSUANCE_ACTION);
@@ -376,7 +376,7 @@ fn current_signed_owner_bundles_preserve_follower_guard_binding_and_epoch_checks
     assurance.refresh(now).unwrap();
     let fetch = assurance.next(now).unwrap().unwrap();
     assurance
-        .on_feed(fetch.id(), &support::bytes(&signed_feed), now)
+        .on_feed(fetch.id(), &crate::support::bytes(&signed_feed), now)
         .unwrap();
     let current = assurance.current(now).unwrap();
     let policy = current

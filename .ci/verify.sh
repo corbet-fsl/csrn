@@ -25,7 +25,7 @@ bash scripts/wasm-runner.sh
 # shellcheck disable=SC1090
 if [ -f "$GITHUB_PATH" ]; then while IFS= read -r p; do [ -n "$p" ] && PATH="$p:$PATH"; done < "$GITHUB_PATH"; fi
 export PATH
-CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test --locked --target wasm32-unknown-unknown --test follower --test door
+CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test --locked --target wasm32-unknown-unknown --test it
 
 rustup run nightly rustc --version
 NIGHTLY_RUSTC="$(rustup which --toolchain nightly rustc)"

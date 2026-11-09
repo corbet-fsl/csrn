@@ -1,9 +1,8 @@
-mod support;
+use crate::support::*;
 use csrn::{
     Assurance, Error,
     feed::{Action, Config, State},
 };
-use support::*;
 fn config() -> Config {
     Config {
         refresh_seconds: 40,

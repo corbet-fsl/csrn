@@ -33,7 +33,7 @@ therefore consumes them only as explicit legacy-format refusals, including when
 their original credential signature remains valid. The captures and provenance
 are retained exactly; no missing claim is added or re-signed under their root.
 
-A separate real-signature owner fixture in `tests/door.rs` uses an independently
+A separate real-signature owner fixture in `tests/it/door.rs` uses an independently
 configured synthetic csgn issuer and Ed25519 device. It first authenticates the
 original public policy/schema/revocation contents through their original
 Charter, then signs those same public terms under its own fixture root. It
