@@ -16,3 +16,5 @@ runs_on = "heavy"
 checks = ["verify"]
 workflow = "ci"
 command = ["bash", ".ci/run-cached.sh"]
+
+[check_shell]
