@@ -3,7 +3,19 @@ project = "csrn"
 
 [checks.verify]
 kind = "commands"
-commands = [["bash", ".ci/verify.sh"]]
+fleet = true
+commands = [
+  ["ccid", "first-party"],
+  ["cargo", "fmt", "--all", "--check"],
+  ["cargo", "fmt", "--all", "--check"],
+  ["python3", "scripts/check-fixtures.py"],
+  ["cargo", "clippy", "--locked", "--all-targets", "--features", "http", "--", "-D", "warnings"],
+  ["cargo", "test", "--locked", "--features", "http"],
+  ["cargo", "check", "--locked", "--target", "wasm32-unknown-unknown"],
+  ["bash", "-c", "set -euo pipefail\nPATH=\"$(ccid toolchain wasm-bindgen):$PATH\" CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=wasm-bindgen-test-runner cargo test --locked --target wasm32-unknown-unknown --test it"],
+  ["ccid", "coverage", "run"],
+  ["ccid", "first-party"],
+]
 cache_tools = [["rustc", "-vV"], ["cargo", "--version"], ["rustup", "run", "nightly", "rustc", "-vV"], ["rustup", "run", "nightly", "cargo", "llvm-cov", "--version"], ["node", "--version"], ["python3", "--version"], ["jq", "--version"], ["curl", "--version"]]
 cache_outputs = ["coverage.json", "coverage.lcov", "coverage.txt", "dependency-metadata.json"]
 
@@ -15,9 +27,21 @@ scheduler = "forgejo"
 runs_on = "linux"
 checks = ["verify"]
 workflow = "ci"
-command = ["bash", ".ci/run-cached.sh"]
+command = ["ccid:run-declared-checks"]
 
 [check_shell]
 
 [security]
 dependencies = "cargo-deny"
+
+[coverage]
+llvm_cov = ["--branch", "--features", "http", "--ignore-filename-regex", "(^|/)(tests|scripts)/"]
+text = ["--show-instantiations"]
+report = ["--branch", "--ignore-filename-regex", "(^|/)(tests|scripts)/"]
+
+[runtime]
+tools = ["nodejs_22", "python3", "cargo-llvm-cov", "jq"]
+
+[toolchain]
+nightly = true
+targets = ["stable:wasm32-unknown-unknown"]
