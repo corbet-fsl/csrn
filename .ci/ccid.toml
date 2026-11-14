@@ -17,7 +17,7 @@ commands = [
   ["ccid", "first-party"],
 ]
 cache_tools = [["rustc", "-vV"], ["cargo", "--version"], ["rustup", "run", "nightly", "rustc", "-vV"], ["rustup", "run", "nightly", "cargo", "llvm-cov", "--version"], ["node", "--version"], ["python3", "--version"], ["jq", "--version"], ["curl", "--version"]]
-cache_outputs = ["coverage.json", "coverage.lcov", "coverage.txt", "dependency-metadata.json"]
+cache_outputs = ["coverage.json", "coverage.lcov", "coverage.txt"]
 
 [render]
 render_schema = 2
